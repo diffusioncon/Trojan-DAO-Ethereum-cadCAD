@@ -15,5 +15,12 @@ export default {
         privateKey: acc.secretKey
       }))
     }
+  },
+  solc: {
+    version: "0.5.11",
+    optimizer: {
+      enabled: true,
+      runs: 200
+    }
   }
 };
