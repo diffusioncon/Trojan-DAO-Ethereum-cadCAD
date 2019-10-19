@@ -1,6 +1,7 @@
 import { ethers } from "@nomiclabs/buidler";
 import chai from "chai";
 import { deployContract, getWallets, solidity } from "ethereum-waffle";
+import { parseEther } from "ethers/utils"
 
 import TrojanDaoArtifact from "../build/TrojanDao.json";
 import TrojanPoolArtifact from "../build/TrojanPool.json";
@@ -75,6 +76,14 @@ describe("Sparkle contract", function() {
       const summoner = await trojan.functions.members(wallet.address);
       expect(summoner.exists).to.be.true;
       expect(summoner.shares).to.eq(1);
+
+      const trojBal = await trojanToken.functions.balanceOf(wallet.address)
+      expect(trojBal).to.above(0);
+
+      await trojanToken.functions.approve(trojanPool.address, parseEther("1"));
+      await trojanPool.functions.activate(parseEther("1"), parseEther("1"));
+      const poolShares = await trojanPool.functions.totalPoolShares();
+      expect(poolShares).to.eq(parseEther("1"));
     });
   });
 });
