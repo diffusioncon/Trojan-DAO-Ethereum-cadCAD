@@ -4,7 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "npx buidler compile",
+    "typechain": "npx buidler compile && typechain --outDir typechain --target ethers 'build/*.json",
+    "test": "npx buidler test"
   },
   "author": "",
   "license": "ISC",
