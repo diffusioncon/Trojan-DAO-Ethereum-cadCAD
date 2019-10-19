@@ -78,7 +78,10 @@ contract TrojanToken is ERC20Detailed {
 
     TrojanPool trojanPool;
 
-    constructor(address _trojanPool) public ERC20Detailed("TrojanDAO", "TROJ", 18) {
+    constructor() public ERC20Detailed("TrojanDAO", "TROJ", 18) {}
+
+    // TODO: this had a circular dependency, fix this better
+    function setTrojanPool(address _trojanPool) public {
         trojanPool = TrojanPool(_trojanPool);
     }
 
