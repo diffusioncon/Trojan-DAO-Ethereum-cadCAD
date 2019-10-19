@@ -53,8 +53,9 @@ SPARKLE! IS:
 
 import "./lib/ERC20Detailed.sol";
 import "./lib/SafeMath.sol";
+import "./TrojanPool.sol";
 
-contract Sparkle is ERC20Detailed {
+contract TrojanToken is ERC20Detailed {
 
     using SafeMath for uint256;
     mapping (address => uint256) private _balances;
@@ -66,15 +67,20 @@ contract Sparkle is ERC20Detailed {
 
     uint256 public constant MAX_SUPPLY = 400000000 * 10 ** 18; // 40000 ETH of Sparkle
     uint256 public constant PERCENT = 100; // 100%
-    uint256 public constant TAX = 2; // 2%
+    uint256 public constant MINT_TAX = 2; // 2%
+    uint256 public constant BURN_TAX = 3; // 3%
+    uint256 public constant TRANSFER_TAX = 1; // 1%
     uint256 public constant COST_PER_TOKEN = 1e14; // 1 Sparkle = .0001 ETH
-    address payable creator = 0x4C3cC1D2229CBD17D26ec984F2E1b9bD336cBf69;
 
     uint256 private _tobinsCollected;
     uint256 private _totalSupply;
     mapping (address => uint256) private _tobinsClaimed; // Internal accounting
 
-    constructor() public ERC20Detailed("Sparkle!", "SPRK", 18) {}
+    TrojanPool trojanPool;
+
+    constructor(address _trojanPool) public ERC20Detailed("TrojanDAO", "TROJ", 18) {
+        trojanPool = TrojanPool(_trojanPool);
+    }
 
     function totalSupply() public view returns (uint256) {
         return _totalSupply;
@@ -99,9 +105,9 @@ contract Sparkle is ERC20Detailed {
     }
 
     function transfer(address to, uint256 value) public returns (bool) {
-        require(to != address(0));
+        require(to != address(0), "Bad address");
 
-        uint256 taxAmount = value.mul(TAX).div(PERCENT);
+        uint256 taxAmount = value.mul(TRANSFER_TAX).div(PERCENT);
 
         _balances[msg.sender] = balanceOf(msg.sender).sub(value).sub(taxAmount);
         _balances[to] = balanceOf(to).add(value);
@@ -117,10 +123,10 @@ contract Sparkle is ERC20Detailed {
     }
 
     function transferFrom(address from, address to, uint256 value) public returns (bool) {
-        require(value <= _allowed[from][msg.sender]);
-        require(to != address(0));
+        require(value <= _allowed[from][msg.sender], "Not enough allowance");
+        require(to != address(0), "Bad address");
 
-        uint256 taxAmount = value.mul(TAX).div(PERCENT);
+        uint256 taxAmount = value.mul(TRANSFER_TAX).div(PERCENT);
 
         _balances[from] = balanceOf(from).sub(value).sub(taxAmount);
         _balances[to] = balanceOf(to).add(value);
@@ -138,21 +144,21 @@ contract Sparkle is ERC20Detailed {
     }
 
     function approve(address spender, uint256 value) public returns (bool) {
-        require(spender != address(0));
+        require(spender != address(0), "Bad address");
         _allowed[msg.sender][spender] = value;
         emit Approval(msg.sender, spender, value);
         return true;
     }
 
     function increaseAllowance(address spender, uint256 addedValue) public returns (bool) {
-        require(spender != address(0));
+        require(spender != address(0), "Bad address");
         _allowed[msg.sender][spender] = (_allowed[msg.sender][spender].add(addedValue));
         emit Approval(msg.sender, spender, _allowed[msg.sender][spender]);
         return true;
     }
 
     function decreaseAllowance(address spender, uint256 subtractedValue) public returns (bool) {
-        require(spender != address(0));
+        require(spender != address(0), "Bad address");
         _allowed[msg.sender][spender] = (_allowed[msg.sender][spender].sub(subtractedValue));
         emit Approval(msg.sender, spender, _allowed[msg.sender][spender]);
         return true;
@@ -164,20 +170,20 @@ contract Sparkle is ERC20Detailed {
 
     function mintSparkle() public payable returns (bool) {
         uint256 amount = msg.value.mul(10 ** 18).div(COST_PER_TOKEN);
-        require(_totalSupply.add(amount) <= MAX_SUPPLY);
+        require(_totalSupply.add(amount) <= MAX_SUPPLY, "Max supply reached");
 
-        uint256 taxAmount = amount.mul(TAX).div(PERCENT);
-        uint256 creatorAmount = amount.mul(1).div(PERCENT);
-        uint256 buyerAmount = amount.sub(taxAmount).sub(creatorAmount);
+        uint256 taxAmount = amount.mul(MINT_TAX).div(PERCENT);
+        uint256 buyerAmount = amount.sub(taxAmount);
 
         _balances[msg.sender] = balanceOf(msg.sender).add(buyerAmount);
-        _balances[creator]= balanceOf(creator).add(creatorAmount);
 
         _totalSupply = _totalSupply.add(amount);
 
         _tobinsClaimed[msg.sender] = _tobinsCollected;
-        _tobinsClaimed[creator] = _tobinsCollected;
         _tobinsCollected = _tobinsCollected.add(taxAmount);
+
+        // deposit tax to trojan pool
+        trojanPool.deposit(taxAmount);
 
         emit Mint(msg.sender, buyerAmount);
         emit SparkleRedistribution(msg.sender, taxAmount);
@@ -186,19 +192,21 @@ contract Sparkle is ERC20Detailed {
     }
 
     function sellSparkle(uint256 amount) public returns (bool) {
-        require(amount > 0 && balanceOf(msg.sender) >= amount);
+        require(amount > 0 && balanceOf(msg.sender) >= amount, "Balance exceeded");
 
         uint256 reward = amount.mul(COST_PER_TOKEN).div(10 ** 18);
 
-        uint256 creatorAmount = reward.mul(3).div(PERCENT);
-        uint256 sellerAmount = reward.sub(creatorAmount);
+        uint256 taxAmount = reward.mul(BURN_TAX).div(PERCENT);
+        uint256 sellerAmount = reward.sub(taxAmount);
 
         _balances[msg.sender] = balanceOf(msg.sender).sub(amount);
         _tobinsClaimed[msg.sender] = _tobinsCollected;
 
         _totalSupply = _totalSupply.sub(amount);
 
-        creator.transfer(creatorAmount);
+        // deposit tax to trojan pool
+        trojanPool.deposit(taxAmount);
+
         msg.sender.transfer(sellerAmount);
 
         emit Sell(msg.sender, amount);
