@@ -129,7 +129,9 @@ contract TrojanPool {
 
             (, applicant, sharesRequested, , , , processed, didPass, aborted, tokenTribute, , maxTotalSharesAtYesVote) = trojan.proposalQueue(i);
 
-            if (!processed) { break; }
+            if (!processed) {
+                break;
+            }
 
             // passing grant proposal, mint pool shares proportionally on behalf of the applicant
             if (!aborted && didPass && tokenTribute == 0 && sharesRequested > 0) {

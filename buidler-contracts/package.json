@@ -18,6 +18,7 @@
     "ethereum-waffle": "^2.1.0",
     "ethers": "^4.0.38",
     "ts-node": "^8.4.1",
+    "typechain": "^0.3.21",
     "typescript": "^3.6.4",
     "web3": "^1.2.1"
   }
