@@ -36,7 +36,6 @@ describe("Sparkle contract", function() {
   beforeEach(async () => {
     // @ts-ignore
     trojanToken = await deployContract(wallet, TrojanTokenArtifact);
-    console.log("trojanToken: ", trojanToken.address);
 
     // TrojanDao constructor args
     // address summoner,
@@ -60,11 +59,9 @@ describe("Sparkle contract", function() {
       deploymentConfig.DILUTION_BOUND,
       deploymentConfig.PROCESSING_REWARD
     ]);
-    console.log("trojan: ", trojan.address);
 
     // @ts-ignore
     trojanPool = await deployContract(wallet, TrojanPoolArtifact, [trojan.address]);
-    console.log('trojanPool: ', trojanPool.address);
 
     await trojanToken.functions.setTrojanPool(trojanPool.address);
 
@@ -77,7 +74,7 @@ describe("Sparkle contract", function() {
     it("Deploys the Trojan contracts", async function() {
       const summoner = await trojan.functions.members(wallet.address);
       expect(summoner.exists).to.be.true;
-      expect(summoner.shares).to.eq(1)
+      expect(summoner.shares).to.eq(1);
     });
   });
 });
