@@ -9,8 +9,8 @@ np.set_printoptions(formatter={'float': lambda x: "{0:0.2f}".format(x)})
 
 initial_conditions = {
   'BC_reserve': 0,
-  'token_holders': np.zeros(8),
-  'n': 8, # max number of token holders including guildbank and DAO pool
+  'token_holders': np.zeros(10),
+  'n': 10, # max number of token holders including guildbank and DAO pool
   'DAO_pool_index': 0,
   'guildbank_index': 1,
   'amount_to_mint': 100, # in eth
@@ -119,7 +119,7 @@ partial_state_update_blocks = [
 
 
 simulation_parameters = {
-    'T': range(100),
+    'T': range(1000),
     'N': 1,
     'M': {}
 }
@@ -135,3 +135,31 @@ exec_mode = ExecutionMode()
 exec_context = ExecutionContext(exec_mode.single_proc)
 executor = Executor(exec_context, [config])
 raw_result, tensor = executor.execute()
+transformed_result = raw_result.copy()
+length = len(transformed_result)
+for i in transformed_result:
+  i['DAO_pool'] = i['token_holders'][0]
+  i['guildbank'] = i['token_holders'][1]
+  i['person_1'] = i['token_holders'][2]
+  i['person_2'] = i['token_holders'][3]
+  i['person_3'] = i['token_holders'][4]
+  i['person_4'] = i['token_holders'][5]
+  i['person_5'] = i['token_holders'][6]
+  i['person_6'] = i['token_holders'][7]
+  i['person_7'] = i['token_holders'][8]
+  i['person_8'] = i['token_holders'][9]
+
+
+
+print(transformed_result)
+plt.close('all')
+
+df = pd.DataFrame(transformed_result)
+df.set_index(['run', 'timestep', 'substep'])
+
+df.plot('timestep', ['DAO_pool', 'person_1', 'person_2', 'person_3', 'person_4', 'person_5', 'person_6', 'person_7', 'person_8'], grid=True, 
+        colormap = 'RdYlGn',
+        xticks=list(df['timestep'].drop_duplicates()), 
+        yticks=list(range(2000)))
+
+plt.show()
