@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "build": "npx buidler compile",
-    "typechain": "npx buidler compile && typechain --outDir typechain --target ethers 'build/*.json",
+    "typechain": "npx buidler compile && typechain --outDir typechain --target ethers 'build/*.json'",
     "test": "npx buidler test"
   },
   "author": "",
@@ -19,6 +19,7 @@
     "@types/node": "^12.11.1",
     "ethereum-waffle": "^2.1.0",
     "ethers": "^4.0.38",
+    "mocha": "^6.2.2",
     "ts-node": "^8.4.1",
     "typechain": "^0.3.21",
     "typescript": "^3.6.4",
