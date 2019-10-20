@@ -159,7 +159,7 @@ df.set_index(['run', 'timestep', 'substep'])
 
 df.plot('timestep', ['DAO_pool', 'person_1', 'person_2', 'person_3', 'person_4', 'person_5', 'person_6', 'person_7', 'person_8'], grid=True, 
         colormap = 'RdYlGn',
-        xticks=list(df['timestep'].drop_duplicates()), 
-        yticks=list(range(2000)))
+        xticks=list(range(1)), 
+        yticks=list(range(1)))
 
 plt.show()
