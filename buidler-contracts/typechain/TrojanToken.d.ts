@@ -24,6 +24,12 @@ interface TrojanTokenInterface extends Interface {
       encode([spender, addedValue]: [string, BigNumberish]): string;
     }>;
 
+    mintTrojan: TypedFunctionDescription<{ encode([]: []): string }>;
+
+    sellTrojan: TypedFunctionDescription<{
+      encode([amount]: [BigNumberish]): string;
+    }>;
+
     decreaseAllowance: TypedFunctionDescription<{
       encode([spender, subtractedValue]: [string, BigNumberish]): string;
     }>;
@@ -35,16 +41,10 @@ interface TrojanTokenInterface extends Interface {
     setTrojanPool: TypedFunctionDescription<{
       encode([_trojanPool]: [string]): string;
     }>;
-
-    mintSparkle: TypedFunctionDescription<{ encode([]: []): string }>;
-
-    sellSparkle: TypedFunctionDescription<{
-      encode([amount]: [BigNumberish]): string;
-    }>;
   };
 
   events: {
-    SparkleRedistribution: TypedEventDescription<{
+    TrojanRedistribution: TypedEventDescription<{
       encodeTopics([from, amount]: [null, null]): string[];
     }>;
 
@@ -55,6 +55,8 @@ interface TrojanTokenInterface extends Interface {
     Sell: TypedEventDescription<{
       encodeTopics([from, amount]: [null, null]): string[];
     }>;
+
+    DaoTax: TypedEventDescription<{ encodeTopics([amount]: [null]): string[] }>;
 
     Transfer: TypedEventDescription<{
       encodeTopics([from, to, value]: [
@@ -111,6 +113,13 @@ export class TrojanToken extends Contract {
       overrides?: TransactionOverrides
     ): Promise<ContractTransaction>;
 
+    mintTrojan(overrides?: TransactionOverrides): Promise<ContractTransaction>;
+
+    sellTrojan(
+      amount: BigNumberish,
+      overrides?: TransactionOverrides
+    ): Promise<ContractTransaction>;
+
     decreaseAllowance(
       spender: string,
       subtractedValue: BigNumberish,
@@ -128,13 +137,6 @@ export class TrojanToken extends Contract {
       overrides?: TransactionOverrides
     ): Promise<ContractTransaction>;
 
-    mintSparkle(overrides?: TransactionOverrides): Promise<ContractTransaction>;
-
-    sellSparkle(
-      amount: BigNumberish,
-      overrides?: TransactionOverrides
-    ): Promise<ContractTransaction>;
-
     name(): Promise<string>;
     totalSupply(): Promise<BigNumber>;
     MINT_TAX(): Promise<BigNumber>;
@@ -149,11 +151,13 @@ export class TrojanToken extends Contract {
   };
 
   filters: {
-    SparkleRedistribution(from: null, amount: null): EventFilter;
+    TrojanRedistribution(from: null, amount: null): EventFilter;
 
     Mint(to: null, amount: null): EventFilter;
 
     Sell(from: null, amount: null): EventFilter;
+
+    DaoTax(amount: null): EventFilter;
 
     Transfer(from: string | null, to: string | null, value: null): EventFilter;
 
@@ -178,6 +182,10 @@ export class TrojanToken extends Contract {
       addedValue: BigNumberish
     ): Promise<BigNumber>;
 
+    mintTrojan(): Promise<BigNumber>;
+
+    sellTrojan(amount: BigNumberish): Promise<BigNumber>;
+
     decreaseAllowance(
       spender: string,
       subtractedValue: BigNumberish
@@ -186,9 +194,5 @@ export class TrojanToken extends Contract {
     transfer(to: string, value: BigNumberish): Promise<BigNumber>;
 
     setTrojanPool(_trojanPool: string): Promise<BigNumber>;
-
-    mintSparkle(): Promise<BigNumber>;
-
-    sellSparkle(amount: BigNumberish): Promise<BigNumber>;
   };
 }
