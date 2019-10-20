@@ -1,7 +1,7 @@
 import { ethers } from "@nomiclabs/buidler";
 import chai from "chai";
 import { deployContract, getWallets, solidity } from "ethereum-waffle";
-import { parseEther } from "ethers/utils"
+import { parseEther, formatEther } from "ethers/utils"
 
 import TrojanDaoArtifact from "../build/TrojanDao.json";
 import TrojanPoolArtifact from "../build/TrojanPool.json";
@@ -28,7 +28,7 @@ const deploymentConfig = {
 
 describe("Sparkle contract", function() {
   const provider = ethers.provider;
-  let [wallet] = getWallets(provider);
+  let [wallet, minter] = getWallets(provider);
   let trojan: TrojanDao;
   let trojanToken: TrojanToken;
   let trojanPool: TrojanPool;
@@ -72,7 +72,7 @@ describe("Sparkle contract", function() {
   });
 
   describe("Trojan", function() {
-    it("Deploys the Trojan contracts", async function() {
+    it("Minting and burning of TROJ adds DAO tax", async function() {
       const summoner = await trojan.functions.members(wallet.address);
       expect(summoner.exists).to.be.true;
       expect(summoner.shares).to.eq(1);
@@ -80,10 +80,32 @@ describe("Sparkle contract", function() {
       const trojBal = await trojanToken.functions.balanceOf(wallet.address)
       expect(trojBal).to.above(0);
 
+      // activate pool
       await trojanToken.functions.approve(trojanPool.address, parseEther("1"));
       await trojanPool.functions.activate(parseEther("1"), parseEther("1"));
-      const poolShares = await trojanPool.functions.totalPoolShares();
-      expect(poolShares).to.eq(parseEther("1"));
+      const poolSharesStarting = await trojanPool.functions.totalPoolShares();
+      expect(poolSharesStarting).to.eq(parseEther("1"));
+      const poolTrojBalStarting = await trojanToken.functions.balanceOf(trojanPool.address);
+      expect(poolTrojBalStarting).to.above(0)
+
+      // mint TROJ
+      const minterToken = trojanToken.connect(minter);
+      await minterToken.functions.mintTrojan({ value: parseEther("2") })
+      const minterTrojBalanceStarting = await minterToken.functions.balanceOf(minter.address);
+      expect(minterTrojBalanceStarting).to.above(0);
+
+      // check dao tax was received and shares were granted to the contract
+      const daoTaxSharesAfterMint = await trojanPool.functions.donors(trojanToken.address);
+      expect(daoTaxSharesAfterMint).to.above(0);
+
+      // burn TROJ
+      await minterToken.functions.sellTrojan(minterTrojBalanceStarting);
+      const minterTrojBalanceEnding = await minterToken.functions.balanceOf(minter.address);
+      expect(minterTrojBalanceEnding).to.eq(0);
+
+      // check dao tax was received and shares were granted to the contract
+      const daoTaxSharesAfterBurn = await trojanPool.functions.donors(trojanToken.address);
+      expect(daoTaxSharesAfterBurn).to.above(daoTaxSharesAfterMint);
     });
   });
 });
