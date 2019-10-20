@@ -61,9 +61,10 @@ contract TrojanToken is ERC20Detailed {
     mapping (address => uint256) private _balances;
     mapping (address => mapping (address => uint256)) private _allowed;
 
-    event SparkleRedistribution(address from, uint amount);
+    event TrojanRedistribution(address from, uint amount);
     event Mint(address to, uint amount);
     event Sell(address from, uint amount);
+    event DaoTax(uint256 amount);
 
     uint256 public constant MAX_SUPPLY = 400000000 * 10 ** 18; // 40000 ETH of Sparkle
     uint256 public constant PERCENT = 100; // 100%
@@ -125,7 +126,7 @@ contract TrojanToken is ERC20Detailed {
         _tobinsCollected = _tobinsCollected.add(taxAmount);
 
         emit Transfer(msg.sender, to, value);
-        emit SparkleRedistribution(msg.sender, taxAmount);
+        emit TrojanRedistribution(msg.sender, taxAmount);
 
         return true;
     }
@@ -146,7 +147,7 @@ contract TrojanToken is ERC20Detailed {
         _allowed[from][msg.sender] = _allowed[from][msg.sender].sub(value);
 
         emit Transfer(from, to, value);
-        emit SparkleRedistribution(from, taxAmount);
+        emit TrojanRedistribution(from, taxAmount);
 
         return true;
     }
@@ -173,10 +174,10 @@ contract TrojanToken is ERC20Detailed {
     }
 
     function () external payable {
-        mintSparkle();
+        mintTrojan();
     }
 
-    function mintSparkle() public payable returns (bool) {
+    function mintTrojan() public payable returns (bool) {
         uint256 amount = msg.value.mul(10 ** 18).div(COST_PER_TOKEN);
         require(_totalSupply.add(amount) <= MAX_SUPPLY, "Max supply reached");
 
@@ -185,21 +186,24 @@ contract TrojanToken is ERC20Detailed {
 
         _balances[msg.sender] = balanceOf(msg.sender).add(buyerAmount);
 
+        // need to add to this contract balance so that it can deposit into the dao
+        _balances[address(this)] = balanceOf(address(this)).add(taxAmount);
+
         _totalSupply = _totalSupply.add(amount);
 
         _tobinsClaimed[msg.sender] = _tobinsCollected;
         _tobinsCollected = _tobinsCollected.add(taxAmount);
 
         // deposit tax to trojan pool
-        trojanPool.deposit(taxAmount);
+        daoTax(taxAmount);
 
         emit Mint(msg.sender, buyerAmount);
-        emit SparkleRedistribution(msg.sender, taxAmount);
+        emit TrojanRedistribution(msg.sender, taxAmount);
 
         return true;
     }
 
-    function sellSparkle(uint256 amount) public returns (bool) {
+    function sellTrojan(uint256 amount) public returns (bool) {
         require(amount > 0 && balanceOf(msg.sender) >= amount, "Balance exceeded");
 
         uint256 reward = amount.mul(COST_PER_TOKEN).div(10 ** 18);
@@ -210,10 +214,13 @@ contract TrojanToken is ERC20Detailed {
         _balances[msg.sender] = balanceOf(msg.sender).sub(amount);
         _tobinsClaimed[msg.sender] = _tobinsCollected;
 
+        // need to add to this contract balance so that it can deposit into the dao
+        _balances[address(this)] = balanceOf(address(this)).add(taxAmount);
+
         _totalSupply = _totalSupply.sub(amount);
 
         // deposit tax to trojan pool
-        trojanPool.deposit(taxAmount);
+        daoTax(taxAmount);
 
         msg.sender.transfer(sellerAmount);
 
@@ -222,5 +229,10 @@ contract TrojanToken is ERC20Detailed {
         return true;
     }
 
+    function daoTax(uint256 amount) internal {
+        this.approve(address(trojanPool), amount);
+        trojanPool.deposit(amount);
+        emit DaoTax(amount);
+    }
 
 }
