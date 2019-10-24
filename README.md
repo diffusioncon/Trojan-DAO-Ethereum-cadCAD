@@ -4,6 +4,8 @@ Trojan DAO
 
 ## Motivation
 
+https://docs.google.com/document/d/1hijSZrzoXS27cmFbjqwUJ-Oh4uBvS-kV6sIw9NJPbns/edit?usp=sharing
+
 ## Contract Structure
 
 `TrojanToken.sol` is an ERC20-compliant token contract with a built-in bonding curve. This token is used as the "approved token" for the Trojan DAO main contract. TROJ tokens can be minted through the contract, which uses a bonding curve as an automated market maker.
